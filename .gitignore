@@ -32,3 +32,6 @@ linkwarden.zip
 **/build/
 **/DerivedData/
 *.xcuserdata
+*.xcuserstate
+xcuserdata/
+*.xcuserdatad/
