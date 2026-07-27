@@ -83,6 +83,18 @@ export const getCreatableTagName = (
   return normalizedName;
 };
 
+export const addPendingTagSelection = (
+  selectedTags: TagOption[],
+  availableTags: TagOption[],
+  query: string
+) => {
+  const name = getCreatableTagName(query, availableTags, selectedTags);
+
+  if (!name) return selectedTags;
+
+  return [...selectedTags, { name }];
+};
+
 export const toggleTagSelection = <T extends TagOption>(
   selectedTags: T[],
   tag: T

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addPendingTagSelection,
   dedupeTags,
   filterAndSortTags,
   getCreatableTagName,
@@ -30,6 +31,13 @@ describe('tag search', () => {
       null
     );
   });
+
+  it('recovers all matches after correcting a typo', () => {
+    expect(filterAndSortTags(tags, 'artifical')).toEqual([]);
+    expect(
+      filterAndSortTags(tags, 'artificial').map((tag) => tag.name)
+    ).toEqual(['Artificial', 'Arte artificial', 'Inteligencia artificial']);
+  });
 });
 
 describe('tag selection', () => {
@@ -51,6 +59,24 @@ describe('tag selection', () => {
     });
 
     expect(remaining).toEqual([tags[2]]);
+  });
+
+  it('keeps a new tag pending and blocks a normalized selected duplicate', () => {
+    const pendingSelection = addPendingTagSelection(
+      [],
+      tags,
+      '  Investigación   abierta '
+    );
+
+    expect(pendingSelection).toEqual([{ name: 'Investigación abierta' }]);
+    expect(pendingSelection[0]).not.toHaveProperty('id');
+    expect(
+      addPendingTagSelection(
+        pendingSelection,
+        tags,
+        'investigación abierta'
+      )
+    ).toBe(pendingSelection);
   });
 });
 

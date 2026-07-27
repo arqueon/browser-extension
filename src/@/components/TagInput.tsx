@@ -18,6 +18,7 @@ import {
 import { cn } from '../lib/utils.ts';
 import { ResponseTags } from '../lib/actions/tags.ts';
 import {
+  addPendingTagSelection,
   filterAndSortTags,
   findExactTag,
   getCreatableTagName,
@@ -104,9 +105,15 @@ export const TagInput: FC<TagInputProps> = ({
   };
 
   const handleCreateTag = () => {
-    if (!creatableTagName) return;
+    const nextValue = addPendingTagSelection(
+      value,
+      availableTags,
+      inputValue
+    );
 
-    onChange([...value, { name: creatableTagName }]);
+    if (nextValue === value) return;
+
+    onChange(nextValue);
     updateSearch('');
   };
 
