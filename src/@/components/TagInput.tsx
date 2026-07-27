@@ -1,10 +1,9 @@
-import { FC, UIEvent, useMemo, useState } from 'react';
+import { FC, KeyboardEvent, UIEvent, useMemo, useState } from 'react';
 import { Button } from './ui/Button.tsx';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/Popover.tsx';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, Loader2, Plus, X } from 'lucide-react';
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -12,13 +11,26 @@ import {
 } from './ui/Command.tsx';
 import { cn } from '../lib/utils.ts';
 import { ResponseTags } from '../lib/actions/tags.ts';
+import {
+  filterAndSortTags,
+  findExactTag,
+  getCreatableTagName,
+  isSameTagName,
+  normalizeTagName,
+  removeTagSelection,
+  TagOption,
+  toggleTagSelection,
+} from '../lib/tag-utils.ts';
 
 interface TagInputProps {
-  onChange: (tags: { name: string }[]) => void;
-  value: { name: string; id?: number }[];
+  onChange: (tags: TagOption[]) => void;
+  value: TagOption[];
   tags: Pick<ResponseTags, 'id' | 'name'>[] | undefined;
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
+  isLoading?: boolean;
+  isSearching?: boolean;
+  errorMessage?: string;
   onReachEnd?: () => void;
   onSearchChange?: (value: string) => void;
 }
@@ -29,22 +41,48 @@ export const TagInput: FC<TagInputProps> = ({
   tags,
   hasNextPage,
   isFetchingNextPage,
+  isLoading,
+  isSearching,
+  errorMessage,
   onReachEnd,
   onSearchChange,
 }) => {
   const [open, setOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>('');
-  const filteredTags = useMemo(() => {
-    if (!Array.isArray(tags)) return [];
 
-    const normalizedInputValue = inputValue.trim().toLowerCase();
+  const availableTags = useMemo(
+    () => (Array.isArray(tags) ? tags : []),
+    [tags]
+  );
+  const filteredTags = useMemo(
+    () => filterAndSortTags(availableTags, inputValue),
+    [availableTags, inputValue]
+  );
+  const exactTag = useMemo(
+    () => findExactTag(availableTags, inputValue),
+    [availableTags, inputValue]
+  );
+  const creatableTagName = useMemo(() => {
+    if (isLoading || isSearching || errorMessage) return null;
+    return getCreatableTagName(inputValue, availableTags, value);
+  }, [
+    availableTags,
+    errorMessage,
+    inputValue,
+    isLoading,
+    isSearching,
+    value,
+  ]);
 
-    if (!normalizedInputValue) return tags;
+  const updateSearch = (search: string) => {
+    setInputValue(search);
+    onSearchChange?.(search);
+  };
 
-    return tags.filter((tag) =>
-      tag.name.toLowerCase().includes(normalizedInputValue)
-    );
-  }, [inputValue, tags]);
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) updateSearch('');
+  };
 
   const handleListScroll = (event: UIEvent<HTMLDivElement>) => {
     if (!hasNextPage || isFetchingNextPage || !onReachEnd) return;
@@ -56,136 +94,195 @@ export const TagInput: FC<TagInputProps> = ({
     if (reachedBottom) onReachEnd();
   };
 
-  function handleAddTag() {
-    if (inputValue && value.some((tagObj) => tagObj.name === inputValue))
-      return;
-    if (inputValue) {
-      const newTags = [...value, { name: inputValue }];
-      setInputValue('');
-      onSearchChange?.('');
-      onChange(newTags);
-    }
-  }
+  const handleCreateTag = () => {
+    if (!creatableTagName) return;
 
-  function handleRemoveTag(tagName: string) {
-    const newTags = value.filter((tagObj) => tagObj.name !== tagName);
-    onChange(newTags);
-  }
+    onChange([...value, { name: creatableTagName }]);
+    updateSearch('');
+  };
+
+  const handleSelectTag = (tag: TagOption) => {
+    onChange(toggleTagSelection(value, tag));
+  };
+
+  const handleRemoveTag = (tagName: string) => {
+    onChange(removeTagSelection(value, tagName));
+  };
+
+  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.nativeEvent.isComposing) return;
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      handleOpenChange(false);
+      return;
+    }
+
+    if (event.key !== ',') return;
+
+    event.preventDefault();
+
+    if (exactTag) {
+      const isAlreadySelected = value.some((tag) =>
+        isSameTagName(tag.name, exactTag.name)
+      );
+
+      if (!isAlreadySelected) onChange([...value, exactTag]);
+      updateSearch('');
+      return;
+    }
+
+    handleCreateTag();
+  };
+
+  const normalizedInputValue = normalizeTagName(inputValue);
+  const showNoResults =
+    !isLoading &&
+    !isSearching &&
+    !errorMessage &&
+    filteredTags.length === 0 &&
+    !creatableTagName;
 
   return (
-    <div className="min-w-full inset-x-0">
-      <Popover open={open} onOpenChange={setOpen}>
+    <div className="min-w-full space-y-2">
+      <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button
+            type="button"
             variant="outline"
             role="combobox"
+            aria-label="Select tags"
             aria-expanded={open}
             className="w-full justify-between bg-neutral-100 dark:bg-neutral-900"
           >
-            {Array.isArray(value) && value.length > 0
-              ? value.map((tag) => tag.name).join(', ')
-              : 'Select tags...'}
+            <span className="truncate">
+              {value.length > 0
+                ? `${value.length} tag${value.length === 1 ? '' : 's'} selected`
+                : 'Select tags...'}
+            </span>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <div className="min-w-full inset-x-0">
-          <PopoverContent className="min-w-full p-0">
-            <Command className="flex-grow min-w-full" shouldFilter={false}>
-              <CommandInput
-                className="min-w-[280px]"
-                placeholder="Search tag or add tag (Enter)"
-                value={inputValue}
-                onValueChange={(value) => {
-                  setInputValue(value);
-                  onSearchChange?.(value);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleAddTag();
-                  }
-                }}
-              />
-              <CommandList
-                className="max-h-[200px]"
-                onScroll={handleListScroll}
-              >
-                <CommandEmpty>No tag found.</CommandEmpty>
-                {Array.isArray(tags) && (
-                  <CommandGroup className="w-full">
-                    {filteredTags.map((tag: { name: string }) => (
-                      <CommandItem
-                        className="w-full"
-                        key={tag.name}
-                        value={tag.name}
-                        onSelect={() => {
-                          if (Array.isArray(value)) {
-                            if (value.some((v) => v.name === tag.name)) {
-                              handleRemoveTag(tag.name);
-                            } else {
-                              onChange([...value, tag]);
-                            }
-                          }
-                          setOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            'mr-2 h-4 w-4',
-                            Array.isArray(value) &&
-                              value.some((v) => v.name === tag.name)
-                              ? 'opacity-100'
-                              : 'opacity-0'
-                          )}
-                        />
-                        {tag.name}
-                      </CommandItem>
-                    ))}
-                    {isFetchingNextPage ? (
-                      <CommandItem
-                        className="w-full"
-                        value="Loading more tags..."
-                        disabled
-                      >
-                        Loading more tags...
-                      </CommandItem>
-                    ) : null}
-                  </CommandGroup>
-                )}
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </div>
-      </Popover>
-    </div>
-  );
 
-  /*
-    return (
-      <div>
-        <div className='flex space-x-2'>
-          <Input value={inputValue} onChange={e => setInputValue(e.target.value)} />
-          <Button type='button' onClick={handleAddTag} onKeyDown={handleAddTag}>Add</Button>
-        </div>
-        <div className='flex flex-wrap mt-2'>
-          {tags.map(tagObj => (
-            <span
-              key={tagObj.name}
-              className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2 mb-2'
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+          <Command className="min-w-full" shouldFilter={false}>
+            <CommandInput
+              autoFocus
+              className="min-w-[280px]"
+              placeholder="Search or create a tag..."
+              value={inputValue}
+              onValueChange={updateSearch}
+              onKeyDown={handleSearchKeyDown}
+            />
+
+            <CommandList
+              className="max-h-[240px]"
+              onScroll={handleListScroll}
             >
-              {tagObj.name}
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading tags...
+                </div>
+              ) : errorMessage ? (
+                <p className="px-3 py-6 text-center text-sm text-destructive">
+                  {errorMessage}
+                </p>
+              ) : (
+                <>
+                  {creatableTagName ? (
+                    <CommandGroup heading="Create">
+                      <CommandItem
+                        className="w-full cursor-pointer"
+                        value={`create ${creatableTagName}`}
+                        onSelect={handleCreateTag}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        <span className="truncate">
+                          Create tag “{creatableTagName}”
+                        </span>
+                      </CommandItem>
+                    </CommandGroup>
+                  ) : null}
+
+                  {filteredTags.length > 0 ? (
+                    <CommandGroup heading="Matching tags">
+                      {filteredTags.map((tag) => {
+                        const isSelected = value.some((selectedTag) =>
+                          isSameTagName(selectedTag.name, tag.name)
+                        );
+
+                        return (
+                          <CommandItem
+                            className="w-full cursor-pointer"
+                            key={tag.id ?? tag.name}
+                            value={tag.name}
+                            onSelect={() => handleSelectTag(tag)}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                isSelected ? 'opacity-100' : 'opacity-0'
+                              )}
+                            />
+                            <span className="truncate">{tag.name}</span>
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  ) : null}
+
+                  {isSearching ? (
+                    <div className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Searching all tags...
+                    </div>
+                  ) : null}
+
+                  {showNoResults ? (
+                    <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+                      {normalizedInputValue
+                        ? 'No matching tag found.'
+                        : 'No tags available.'}
+                    </p>
+                  ) : null}
+
+                  {isFetchingNextPage ? (
+                    <div className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading more tags...
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      {value.length > 0 ? (
+        <div
+          className="flex max-h-24 flex-wrap gap-1.5 overflow-y-auto"
+          aria-label="Selected tags"
+        >
+          {value.map((tag) => (
+            <span
+              key={tag.id ?? tag.name}
+              className="inline-flex max-w-full items-center gap-1 rounded-full bg-secondary px-2 py-1 text-xs text-secondary-foreground"
+            >
+              <span className="truncate">{tag.name}</span>
               <button
-                type='button'
-                className='flex-shrink-0 ml-1.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-blue-400 hover:bg-blue-200 hover:text-blue-500 focus:outline-none focus:bg-blue-500 focus:text-white'
-                onClick={() => handleRemoveTag(tagObj.name)}
+                type="button"
+                className="rounded-full p-0.5 hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={`Remove tag ${tag.name}`}
+                onClick={() => handleRemoveTag(tag.name)}
               >
-                <span className='sr-only'>Remove tag</span>
-                <svg className='h-2 w-2' stroke='currentColor' fill='none' viewBox='0 0 8 8'>
-                  <path strokeLinecap='round' strokeWidth='1.5' d='M1 1l6 6m0-6L1 7' />
-                </svg>
+                <X className="h-3 w-3" />
               </button>
             </span>
           ))}
         </div>
-      </div>
-    );*/
+      ) : null}
+    </div>
+  );
 };

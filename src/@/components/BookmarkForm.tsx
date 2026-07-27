@@ -38,6 +38,7 @@ import {
 } from './ui/Command.tsx';
 import { Checkbox } from './ui/CheckBox.tsx';
 import { Label } from './ui/Label.tsx';
+import { dedupeTags } from '../lib/tag-utils.ts';
 
 const BookmarkForm = () => {
   const [openOptions, setOpenOptions] = useState<boolean>(false);
@@ -45,6 +46,7 @@ const BookmarkForm = () => {
   const [uploadImage, setUploadImage] = useState<boolean>(false);
   const [state, setState] = useState<'capturing' | 'uploading' | null>(null);
   const [tagSearch, setTagSearch] = useState<string>('');
+  const [debouncedTagSearch, setDebouncedTagSearch] = useState<string>('');
 
   const [isConfigured, setIsConfigured] = useState(false);
   const [isDuplicate, setIsDuplicate] = useState(false);
@@ -152,9 +154,17 @@ const BookmarkForm = () => {
     };
 
     setTabInformation();
-  }, []);
+  }, [form]);
 
   const { handleSubmit, control } = form;
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedTagSearch(tagSearch.trim());
+    }, 200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [tagSearch]);
 
   // useEffect(() => {
   //   const syncBookmarks = async () => {
@@ -203,11 +213,12 @@ const BookmarkForm = () => {
         config?.baseUrl as string,
         config?.apiKey as string
       ),
-    enabled: isConfigured && openOptions,
+    enabled: isConfigured,
   });
-  const effectiveTagSearch = shouldUseTagSearch ? tagSearch : '';
+  const effectiveTagSearch = shouldUseTagSearch ? debouncedTagSearch : '';
   const {
     isLoading: loadingTags,
+    isFetching: fetchingTags,
     data: tagsData,
     error: tagsError,
     hasNextPage,
@@ -215,27 +226,34 @@ const BookmarkForm = () => {
     fetchNextPage,
   } = useInfiniteQuery(
     ['tags', config?.baseUrl, config?.apiKey, effectiveTagSearch],
-    async ({ pageParam = 0 }) => {
+    async ({ pageParam = 0, signal }) => {
       return await getTags(
         config?.baseUrl as string,
         config?.apiKey as string,
         pageParam,
-        effectiveTagSearch
+        effectiveTagSearch,
+        signal
       );
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-      enabled: isConfigured && openOptions,
+      enabled: isConfigured,
     }
   );
 
   const tags = useMemo(() => {
-    return (
-      tagsData?.pages
-        .flatMap((page) => page.tags)
-        .sort((a, b) => a.name.localeCompare(b.name)) ?? []
+    const loadedTags = tagsData?.pages.flatMap((page) => page.tags) ?? [];
+
+    return dedupeTags(loadedTags).sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
     );
   }, [tagsData]);
+
+  const normalizedTagSearch = tagSearch.trim();
+  const isSearchingTags =
+    shouldUseTagSearch &&
+    Boolean(normalizedTagSearch) &&
+    (normalizedTagSearch !== effectiveTagSearch || fetchingTags);
 
   return (
     <div>
@@ -426,6 +444,36 @@ const BookmarkForm = () => {
             )}
           />
 
+          <FormField
+            control={control}
+            name="tags"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tags</FormLabel>
+                <TagInput
+                  onChange={field.onChange}
+                  value={field.value ?? []}
+                  tags={tags}
+                  hasNextPage={hasNextPage}
+                  isFetchingNextPage={isFetchingNextPage}
+                  isLoading={loadingTags}
+                  isSearching={isSearchingTags}
+                  errorMessage={
+                    tagsError
+                      ? 'Tags could not be loaded. Check your Linkwarden connection.'
+                      : undefined
+                  }
+                  onSearchChange={setTagSearch}
+                  onReachEnd={() => {
+                    if (!hasNextPage || isFetchingNextPage) return;
+                    void fetchNextPage();
+                  }}
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           {!openOptions && (
             <Label className="flex items-center gap-2 w-fit cursor-pointer">
               <Checkbox
@@ -438,47 +486,6 @@ const BookmarkForm = () => {
 
           {openOptions && (
             <>
-              {tagsError ? <p>There was an error...</p> : null}
-              <FormField
-                control={control}
-                name="tags"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tags</FormLabel>
-                    {loadingTags ? (
-                      <TagInput
-                        onChange={field.onChange}
-                        value={[{ name: 'Loading tags...' }]}
-                        tags={[{ id: 1, name: 'Loading tags...' }]}
-                        hasNextPage={false}
-                        isFetchingNextPage={false}
-                      />
-                    ) : tagsError ? (
-                      <TagInput
-                        onChange={field.onChange}
-                        value={[{ name: 'Not found' }]}
-                        tags={[{ id: 1, name: 'Not found' }]}
-                        hasNextPage={false}
-                        isFetchingNextPage={false}
-                      />
-                    ) : (
-                      <TagInput
-                        onChange={field.onChange}
-                        value={field.value ?? []}
-                        tags={tags}
-                        hasNextPage={hasNextPage}
-                        isFetchingNextPage={isFetchingNextPage}
-                        onSearchChange={setTagSearch}
-                        onReachEnd={() => {
-                          if (!hasNextPage || isFetchingNextPage) return;
-                          void fetchNextPage();
-                        }}
-                      />
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <FormField
                 control={control}
                 name="name"

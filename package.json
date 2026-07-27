@@ -12,6 +12,7 @@
     "build:safari": "tsc && vite build --outDir dist-safari && cp ./manifest.safari.json dist-safari/manifest.json && cp public/*.png dist-safari/",
     "convert:safari": "xcrun safari-web-extension-converter dist-safari/ --project-location safari/ --app-name Linkwarden --bundle-identifier app.linkwarden.safari-extension --swift --macos-only --no-prompt --no-open",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test": "vitest run",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -58,6 +59,7 @@
     "tailwindcss": "^3.3.3",
     "typescript": "^5.0.2",
     "vite": "^7.2.0",
+    "vitest": "^4.1.10",
     "webextension-polyfill": "^0.12.0"
   }
 }

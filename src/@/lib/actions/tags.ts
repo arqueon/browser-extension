@@ -164,7 +164,8 @@ export async function getTags(
   baseUrl: string,
   apiKey: string,
   cursor = 0,
-  search = ''
+  search = '',
+  signal?: AbortSignal
 ): Promise<TagsPage> {
   const { shouldUsePagination, shouldUseSearch } = await getTagFeatures(
     baseUrl,
@@ -191,6 +192,7 @@ export async function getTags(
     LegacyTagsResponse | PaginatedTagsResponse
   >(`${baseUrl}/api/v1/tags?${searchParams.toString()}`, {
     headers,
+    signal,
   });
 
   const payload = extractTagsPayload(initialResponse.data);
