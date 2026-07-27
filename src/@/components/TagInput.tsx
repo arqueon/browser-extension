@@ -1,6 +1,12 @@
-import { FC, KeyboardEvent, UIEvent, useMemo, useState } from 'react';
+import {
+  FC,
+  KeyboardEvent,
+  UIEvent,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Button } from './ui/Button.tsx';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/Popover.tsx';
 import { Check, ChevronsUpDown, Loader2, Plus, X } from 'lucide-react';
 import {
   Command,
@@ -49,6 +55,8 @@ export const TagInput: FC<TagInputProps> = ({
 }) => {
   const [open, setOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>('');
+  const listRef = useRef<HTMLDivElement>(null);
+  const listScrollTopRef = useRef(0);
 
   const availableTags = useMemo(
     () => (Array.isArray(tags) ? tags : []),
@@ -88,6 +96,7 @@ export const TagInput: FC<TagInputProps> = ({
     if (!hasNextPage || isFetchingNextPage || !onReachEnd) return;
 
     const target = event.currentTarget;
+    listScrollTopRef.current = target.scrollTop;
     const reachedBottom =
       target.scrollTop + target.clientHeight >= target.scrollHeight - 16;
 
@@ -103,6 +112,12 @@ export const TagInput: FC<TagInputProps> = ({
 
   const handleSelectTag = (tag: TagOption) => {
     onChange(toggleTagSelection(value, tag));
+
+    requestAnimationFrame(() => {
+      if (listRef.current) {
+        listRef.current.scrollTop = listScrollTopRef.current;
+      }
+    });
   };
 
   const handleRemoveTag = (tagName: string) => {
@@ -135,6 +150,13 @@ export const TagInput: FC<TagInputProps> = ({
     handleCreateTag();
   };
 
+  const handleDialogKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Escape') return;
+
+    event.preventDefault();
+    handleOpenChange(false);
+  };
+
   const normalizedInputValue = normalizeTagName(inputValue);
   const showNoResults =
     !isLoading &&
@@ -144,28 +166,54 @@ export const TagInput: FC<TagInputProps> = ({
     !creatableTagName;
 
   return (
-    <div className="min-w-full space-y-2">
-      <Popover open={open} onOpenChange={handleOpenChange}>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            role="combobox"
-            aria-label="Select tags"
-            aria-expanded={open}
-            className="w-full justify-between bg-neutral-100 dark:bg-neutral-900"
-          >
-            <span className="truncate">
-              {value.length > 0
-                ? `${value.length} tag${value.length === 1 ? '' : 's'} selected`
-                : 'Select tags...'}
-            </span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
+    <div className={cn('min-w-full space-y-2', open && 'h-[600px]')}>
+      <Button
+        type="button"
+        variant="outline"
+        role="combobox"
+        aria-haspopup="dialog"
+        aria-label="Select tags"
+        aria-expanded={open}
+        className="w-full justify-between bg-neutral-100 dark:bg-neutral-900"
+        onClick={() => handleOpenChange(true)}
+      >
+        <span className="truncate">
+          {value.length > 0
+            ? `${value.length} tag${value.length === 1 ? '' : 's'} selected`
+            : 'Select tags...'}
+        </span>
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
 
-        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-          <Command className="min-w-full" shouldFilter={false}>
+      {open ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Select tags"
+          className="fixed inset-0 z-50 flex h-full w-full flex-col bg-background text-foreground"
+          onKeyDown={handleDialogKeyDown}
+        >
+          <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
+            <div>
+              <h2 className="text-base font-semibold">Tags</h2>
+              <p className="text-xs text-muted-foreground">
+                {value.length} selected
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9"
+              onClick={() => handleOpenChange(false)}
+            >
+              Done
+            </Button>
+          </div>
+
+          <Command
+            className="min-h-0 flex-1 rounded-none"
+            shouldFilter={false}
+          >
             <CommandInput
               autoFocus
               className="min-w-[280px]"
@@ -176,7 +224,8 @@ export const TagInput: FC<TagInputProps> = ({
             />
 
             <CommandList
-              className="max-h-[240px]"
+              ref={listRef}
+              className="min-h-0 max-h-none flex-1"
               onScroll={handleListScroll}
             >
               {isLoading ? (
@@ -257,8 +306,8 @@ export const TagInput: FC<TagInputProps> = ({
               )}
             </CommandList>
           </Command>
-        </PopoverContent>
-      </Popover>
+        </div>
+      ) : null}
 
       {value.length > 0 ? (
         <div
