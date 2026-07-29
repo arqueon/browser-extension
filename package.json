@@ -12,6 +12,7 @@
     "build:safari": "tsc && vite build --outDir dist-safari && cp ./manifest.safari.json dist-safari/manifest.json && cp public/*.png dist-safari/",
     "convert:safari": "xcrun safari-web-extension-converter dist-safari/ --project-location safari/ --app-name Linkwarden --bundle-identifier app.linkwarden.safari-extension --swift --macos-only --no-prompt --no-open",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test": "node --test tests/*.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {
