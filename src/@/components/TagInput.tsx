@@ -171,6 +171,7 @@ export const TagInput: FC<TagInputProps> = ({
     !errorMessage &&
     filteredTags.length === 0 &&
     !creatableTagName;
+  const selectedTagsLabel = value.map((tag) => tag.name).join(', ');
 
   return (
     <div className={cn('min-w-full space-y-2', open && 'h-[600px]')}>
@@ -179,15 +180,18 @@ export const TagInput: FC<TagInputProps> = ({
         variant="outline"
         role="combobox"
         aria-haspopup="dialog"
-        aria-label="Select tags"
+        aria-label={
+          selectedTagsLabel
+            ? `Selected tags: ${selectedTagsLabel}`
+            : 'Select tags'
+        }
         aria-expanded={open}
+        title={selectedTagsLabel || undefined}
         className="w-full justify-between bg-neutral-100 dark:bg-neutral-900"
         onClick={() => handleOpenChange(true)}
       >
         <span className="truncate">
-          {value.length > 0
-            ? `${value.length} tag${value.length === 1 ? '' : 's'} selected`
-            : 'Select tags...'}
+          {selectedTagsLabel || 'Select tags...'}
         </span>
         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </Button>
