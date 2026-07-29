@@ -20,7 +20,13 @@ import { getCurrentTabInfo, updateBadge } from '../lib/utils.ts';
 import { useEffect, useMemo, useState } from 'react';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { getConfig, isConfigured as getIsConfigured } from '../lib/config.ts';
-import { checkLinkExists, postLink } from '../lib/actions/links.ts';
+import {
+  getLinkByUrl,
+  postLink,
+  rememberSavedLink,
+  updateLink,
+} from '../lib/actions/links.ts';
+import { ExistingLink } from '../lib/link-utils.ts';
 import { AxiosError } from 'axios';
 import { toast } from '../../hooks/use-toast.ts';
 import { Toaster } from './ui/Toaster.tsx';
@@ -49,7 +55,8 @@ const BookmarkForm = () => {
   const [debouncedTagSearch, setDebouncedTagSearch] = useState<string>('');
 
   const [isConfigured, setIsConfigured] = useState(false);
-  const [isDuplicate, setIsDuplicate] = useState(false);
+  const [isCheckingExistingLink, setIsCheckingExistingLink] = useState(true);
+  const [existingLink, setExistingLink] = useState<ExistingLink | null>(null);
 
   const [config, setConfig] = useState<{
     baseUrl: string;
@@ -85,15 +92,22 @@ const BookmarkForm = () => {
 
   const { mutate: onSubmit, isLoading } = useMutation({
     mutationFn: async (values: bookmarkFormValues) => {
-      await postLink(
+      if (existingLink) {
+        return await updateLink(
+          config?.baseUrl as string,
+          existingLink.id,
+          values,
+          config?.apiKey as string
+        );
+      }
+
+      return await postLink(
         config?.baseUrl as string,
         uploadImage,
         values,
         setState,
         config?.apiKey as string
       );
-
-      return;
     },
     onError: (error) => {
       console.error(error);
@@ -115,42 +129,76 @@ const BookmarkForm = () => {
       }
       return;
     },
-    onSuccess: () => {
+    onSuccess: async (response) => {
+      const savedLink = response?.data?.response as ExistingLink | undefined;
+
+      if (savedLink) {
+        try {
+          await rememberSavedLink(config?.baseUrl as string, savedLink);
+        } catch (error) {
+          console.warn('Could not remember the saved link locally', error);
+        }
+        setExistingLink(savedLink);
+      }
+
       // Update badge to show link is saved
-      getCurrentTabInfo().then(({ id }) => {
-        updateBadge(id);
-      });
+      const { id } = await getCurrentTabInfo();
+      await updateBadge(id);
+
       setTimeout(() => {
         window.close();
         // I want to show some confirmation before it's closed...
       }, 3500);
       toast({
         title: 'Success',
-        description: 'Link saved successfully!',
+        description: existingLink
+          ? 'Link updated successfully!'
+          : 'Link saved successfully!',
       });
     },
   });
 
   useEffect(() => {
     const setTabInformation = async () => {
-      const t = await getCurrentTabInfo();
-      const c = await getConfig();
+      try {
+        const t = await getCurrentTabInfo();
+        const c = await getConfig();
 
-      setTabInfo(t);
-      setConfig(c);
+        setTabInfo(t);
+        setConfig(c);
 
-      updateBadge(t.id);
+        form.setValue('url', t.url ? t.url : '');
+        form.setValue('name', t.title ? t.title : '');
+        form.setValue('collection', {
+          name: c.defaultCollection,
+        });
 
-      form.setValue('url', t.url ? t.url : '');
-      form.setValue('name', t.title ? t.title : '');
-      form.setValue('collection', {
-        name: c.defaultCollection,
-      });
+        const configured = await getIsConfigured();
+        setIsConfigured(configured);
 
-      const configured = await getIsConfigured();
-      const duplicate = await checkLinkExists(c.baseUrl, c.apiKey);
-      setIsDuplicate(duplicate);
-      setIsConfigured(configured);
+        if (!configured || !t.url) return;
+
+        const link = await getLinkByUrl(c.baseUrl, c.apiKey, t.url);
+        setExistingLink(link);
+
+        if (link) {
+          setUploadImage(false);
+          form.reset({
+            url: link.url,
+            name: link.name || t.title || '',
+            collection: link.collection ?? {
+              name: c.defaultCollection,
+            },
+            tags: link.tags ?? [],
+            description: link.description ?? '',
+            image: undefined,
+          });
+        }
+      } catch (error) {
+        console.error('Could not check whether the link already exists', error);
+      } finally {
+        setIsCheckingExistingLink(false);
+      }
     };
 
     setTabInformation();
@@ -259,7 +307,10 @@ const BookmarkForm = () => {
     <div>
       <Form {...form}>
         <form
-          onSubmit={handleSubmit((e) => onSubmit(e))}
+          onSubmit={handleSubmit((values) => {
+            if (isCheckingExistingLink) return;
+            onSubmit(values);
+          })}
           className="py-1 space-y-5"
         >
           {collectionError ? (
@@ -474,7 +525,7 @@ const BookmarkForm = () => {
             )}
           />
 
-          {!openOptions && (
+          {!existingLink && !openOptions && (
             <Label className="flex items-center gap-2 w-fit cursor-pointer">
               <Checkbox
                 checked={uploadImage}
@@ -517,7 +568,7 @@ const BookmarkForm = () => {
                 )}
               />
 
-              {openOptions && (
+              {!existingLink && openOptions && (
                 <Label className="flex items-center gap-2 w-fit cursor-pointer">
                   <Checkbox
                     checked={uploadImage}
@@ -538,12 +589,19 @@ const BookmarkForm = () => {
               {openOptions ? 'Hide' : 'More'} Options
             </Button>
 
-            <Button disabled={isLoading} type="submit">
-              Save
+            <Button
+              disabled={isLoading || isCheckingExistingLink}
+              type="submit"
+            >
+              {isCheckingExistingLink
+                ? 'Checking...'
+                : existingLink
+                ? 'Update'
+                : 'Save'}
             </Button>
           </div>
 
-          {isDuplicate && (
+          {existingLink && (
             <div className="w-fit ml-auto">
               <a
                 className="text-muted text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:underline cursor-pointer"
@@ -558,7 +616,7 @@ const BookmarkForm = () => {
                   window.close();
                 }}
               >
-                Note: You've already saved this link{' '}
+                This link is already saved. You can edit it here.{' '}
                 <ExternalLink size={16} className="inline-block mb-1" />
               </a>
             </div>
