@@ -58,6 +58,7 @@ export const TagInput: FC<TagInputProps> = ({
   const [inputValue, setInputValue] = useState<string>('');
   const listRef = useRef<HTMLDivElement>(null);
   const listScrollTopRef = useRef(0);
+  const selectingWithEnterRef = useRef(false);
 
   const availableTags = useMemo(
     () => (Array.isArray(tags) ? tags : []),
@@ -118,11 +119,21 @@ export const TagInput: FC<TagInputProps> = ({
   };
 
   const handleSelectTag = (tag: TagOption) => {
+    const shouldResetSearch = selectingWithEnterRef.current;
+    selectingWithEnterRef.current = false;
+
     onChange(toggleTagSelection(value, tag));
+
+    if (shouldResetSearch) {
+      listScrollTopRef.current = 0;
+      updateSearch('');
+    }
 
     requestAnimationFrame(() => {
       if (listRef.current) {
-        listRef.current.scrollTop = listScrollTopRef.current;
+        listRef.current.scrollTop = shouldResetSearch
+          ? 0
+          : listScrollTopRef.current;
       }
     });
   };
@@ -137,6 +148,14 @@ export const TagInput: FC<TagInputProps> = ({
     if (event.key === 'Escape') {
       event.preventDefault();
       handleOpenChange(false);
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      selectingWithEnterRef.current = true;
+      requestAnimationFrame(() => {
+        selectingWithEnterRef.current = false;
+      });
       return;
     }
 
