@@ -205,10 +205,16 @@ export const TagInput: FC<TagInputProps> = ({
           onKeyDown={handleDialogKeyDown}
         >
           <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
-            <div>
+            <div className="min-w-0 flex-1 pr-3">
               <h2 className="text-base font-semibold">Tags</h2>
-              <p className="text-xs text-muted-foreground">
-                {value.length} selected
+              <p
+                className="truncate text-xs text-muted-foreground"
+                aria-live="polite"
+                title={selectedTagsLabel || undefined}
+              >
+                {value.length > 0
+                  ? `${value.length} selected: ${selectedTagsLabel}`
+                  : 'No tags selected'}
               </p>
             </div>
             <Button
