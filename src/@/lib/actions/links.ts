@@ -144,7 +144,8 @@ export async function updateLink(
 ) {
   const url = `${baseUrl}/api/v1/links/${id}`;
 
-  return await axios.put(url, data, {
+  // The server-side update schema also expects the link id inside the body.
+  return await axios.put(url, { ...data, id }, {
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
@@ -162,7 +163,7 @@ export async function updateLinkFetch(
 
   return await fetch(url, {
     method: 'PUT',
-    body: JSON.stringify(data),
+    body: JSON.stringify({ ...data, id }),
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
