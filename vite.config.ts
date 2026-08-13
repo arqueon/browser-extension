@@ -10,6 +10,10 @@ export default defineConfig({
     },
   },
   build: {
+    // Chromium reports Vite's generated modulepreload links as cross-world
+    // extension resource mismatches. Extension pages load their entry modules
+    // directly, so preloading them adds warnings without improving startup.
+    modulePreload: false,
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),

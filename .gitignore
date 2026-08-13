@@ -28,6 +28,11 @@ dist.pem
 
 linkwarden.zip
 
+# Local editorial decisions and rejected visual explorations
+.sdocs/
+assets/icon-proposals/
+store-assets/popup-demo-debug.png
+
 # Safari / Xcode
 **/build/
 **/DerivedData/

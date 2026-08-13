@@ -1,6 +1,6 @@
 # Tagwarden privacy notice
 
-Effective date: 2026-08-08
+Effective date: 2026-08-13
 
 Tagwarden is an independent browser companion for Linkwarden. It has no
 telemetry, advertising, analytics, or developer-operated backend.
@@ -24,10 +24,10 @@ information are transmitted only to the Linkwarden instance chosen by the
 user. Tagwarden does not transmit them to its maintainers or to another
 third-party service.
 
-The instance URL, API token, default collection, theme, domain rules, and tag
-suggestion history are stored in the browser's local extension storage. They
-are removed when the extension is uninstalled, subject to the browser's own
-storage behavior.
+The instance URL, API token, optional consent for unencrypted local HTTP,
+default collection, theme, domain rules, and tag suggestion history are stored
+in the browser's local extension storage. They are removed when the extension
+is uninstalled, subject to the browser's own storage behavior.
 
 ## Permissions
 
@@ -36,17 +36,27 @@ storage behavior.
 - `activeTab` and `scripting`: read or capture the active page only for visible,
   user-initiated save and screenshot features.
 - `contextMenus`: open Tagwarden from a page's context menu.
-- Optional host access: connect only to the Linkwarden origin entered by the
-  user.
+- Optional host access: connect only to the Linkwarden host entered by the
+  user. Chromium keeps the configured port in this permission. Firefox grants
+  the chosen scheme and host without a port because Firefox match patterns do
+  not support port-scoped permissions.
 
 Tagwarden does not query Linkwarden automatically as the user navigates. It
 connects when the user opens or invokes a Tagwarden feature.
 
 ## Security and control
 
-Remote Linkwarden instances must use HTTPS. Plain HTTP is accepted only for
-localhost development. Users can revoke the optional site permission, clear
-the extension's local storage, or uninstall Tagwarden at any time.
+HTTPS is required for public or unrecognized remote Linkwarden instances.
+Plain HTTP is accepted automatically only for loopback. For recognized private
+IPv4, shared/private IPv4, IPv6 ULA or link-local, `.local`, `home.arpa`, and
+single-label local hosts, the user must explicitly enable an unencrypted HTTP
+warning for that instance. In this mode, authentication information, URLs,
+notes, tags, and other selected data can be read or altered by someone with
+access to the network; Tagwarden cannot provide transport confidentiality.
+
+Users can revoke the optional site permission, disable the local HTTP consent
+by saving a secure instance, clear the extension's local storage, or uninstall
+Tagwarden at any time.
 
 This repository does not accept secrets in issues. Security or privacy reports
 should be sent privately to `arqueonautis@gmail.com`.

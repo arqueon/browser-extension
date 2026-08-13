@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Tagwarden — Tags for Linkwarden",
+  "short_name": "Tagwarden",
+  "description": "Save, organize, and find Linkwarden links with tags at the center.",
+  "version": "0.1.2",
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": { "16": "16.png", "32": "32.png", "48": "48.png", "128": "128.png" },
+    "default_title": "Tagwarden"
+  },
+  "options_ui": { "page": "src/pages/Options/options.html", "browser_style": false },
+  "icons": { "16": "16.png", "32": "32.png", "48": "48.png", "128": "128.png" },
+  "permissions": ["storage", "scripting", "activeTab", "tabs", "contextMenus"],
+  "optional_host_permissions": ["<all_urls>"],
+  "background": { "scripts": ["background.js"], "type": "module" },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http: https:;"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Ctrl+Shift+F", "mac": "Command+Shift+Y" }
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "tagwarden@arqueon.dev",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "authenticationInfo",
+          "browsingActivity",
+          "websiteContent"
+        ]
+      }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
+    }
+  }
+}

@@ -71,26 +71,34 @@ const drawImagesOnCanvas = async (
   });
 };
 
-async function executeScript(tabId: number, func: any, args: any[] = []) {
+async function executeScript<Result, Args extends unknown[] = []>(
+  tabId: number,
+  func: (...args: Args) => Result,
+  args = [] as unknown as Args
+): Promise<Awaited<Result> | undefined> {
   if (
     typeof chrome !== 'undefined' &&
     typeof chrome.scripting !== 'undefined'
   ) {
-    const results = await chrome.scripting.executeScript({
+    const results = await chrome.scripting.executeScript<Args, Result>({
       target: { tabId },
       func,
       args,
     });
-    return results[0]?.result;
+    return results[0]?.result as Awaited<Result> | undefined;
   }
 
   const results = await browser.tabs.executeScript(tabId, {
     code: `(${func})(${args.map((arg) => JSON.stringify(arg)).join(',')})`,
   });
-  return results[0];
+  return results[0] as Awaited<Result> | undefined;
 }
 
-async function safeExecuteScript(tabId: number, func: any, args: any[] = []) {
+async function safeExecuteScript<Result, Args extends unknown[] = []>(
+  tabId: number,
+  func: (...args: Args) => Result,
+  args = [] as unknown as Args
+) {
   try {
     await executeScript(tabId, func, args);
   } catch {
@@ -160,19 +168,25 @@ async function captureFullPageScreenshot(): Promise<Blob> {
   const adjustFixedElements = () => {
     const elements = Array.from(document.querySelectorAll('*'));
     const originalStyles = elements
-      .filter((el) => {
+      .filter((el): el is HTMLElement => {
         const cs = getComputedStyle(el);
-        return ['fixed', 'sticky'].includes(cs.position);
+        return (
+          el instanceof HTMLElement &&
+          ['fixed', 'sticky'].includes(cs.position)
+        );
       })
       .map((el) => ({
         selector: el.tagName.toLowerCase() + (el.id ? `#${el.id}` : ''),
-        position: (el as any).style.position,
+        position: el.style.position,
       }));
 
     elements.forEach((el) => {
       const cs = getComputedStyle(el);
-      if (['fixed', 'sticky'].includes(cs.position)) {
-        (el as any).style.position = 'relative';
+      if (
+        el instanceof HTMLElement &&
+        ['fixed', 'sticky'].includes(cs.position)
+      ) {
+        el.style.position = 'relative';
       }
     });
 
@@ -213,7 +227,8 @@ async function captureFullPageScreenshot(): Promise<Blob> {
   };
 
   await executeScript(tab.id, addHideScrollbarClass);
-  const originalStyles = await executeScript(tab.id, adjustFixedElements);
+  const originalStyles =
+    (await executeScript(tab.id, adjustFixedElements)) ?? [];
   await executeScript(tab.id, addDisableSmoothScrollbarClass);
 
   const totalHeight = (await executeScript(
@@ -245,7 +260,7 @@ async function captureFullPageScreenshot(): Promise<Blob> {
 
     await executeScript(
       tab.id,
-      (pos: any) => {
+      (pos: number) => {
         document.documentElement.style.scrollBehavior = 'auto';
         window.scrollTo(0, pos);
       },

@@ -1,0 +1,30 @@
+{
+  "default_locale": "en-US",
+  "name": {
+    "en-US": "Tagwarden — Tags for Linkwarden"
+  },
+  "summary": {
+    "en-US": "Save, edit, organize, and find Linkwarden links with tags at the center."
+  },
+  "description": {
+    "en-US": "Tagwarden turns Linkwarden into a tag-first browser workflow. Save a page or edit an existing link without leaving the popup, select or create tags first, and reuse local suggestions based on the current domain and your own history.\n\nThe same window includes a complete tag manager, Linkwarden library search by one or several tags, batch saving for selected tabs, connection settings, a default collection, and light or dark appearance.\n\nTagwarden has no analytics, ads, telemetry, or maintainer-operated server. It connects only to the Linkwarden instance you configure. A Linkwarden account or self-hosted instance is required.\n\nThis is an independent community project and is not affiliated with or endorsed by Linkwarden."
+  },
+  "slug": "tagwarden-tags-for-linkwarden",
+  "categories": {
+    "firefox": [
+      "bookmarks"
+    ],
+    "android": [
+      "bookmarks"
+    ]
+  },
+  "is_experimental": false,
+  "requires_payment": false,
+  "support_email": {
+    "en-US": "arqueonautis@gmail.com"
+  },
+  "version": {
+    "license": "MIT",
+    "approval_notes": "Tagwarden requires a Linkwarden instance. Reviewer credentials must be supplied only through AMO's private reviewer channel. Open Settings, enter the HTTPS instance URL and reviewer credentials, then test Save or edit on an HTTPS page, Manage tags, Save tabs, and Find links. Recognized private HTTP instances expose a separate warning and require explicit opt-in; the reviewer account uses HTTPS. The account must contain only fictitious review data. Screenshot capture is optional and runs only when selected. Build the submitted source with npm ci, npm test, npm run lint, and npm run build:firefox; see AMO_BUILD.md. Two validator warnings may originate from the bundled ReactDOM runtime; Tagwarden source does not use innerHTML or dangerouslySetInnerHTML."
+  }
+}

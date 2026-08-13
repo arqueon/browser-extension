@@ -40,6 +40,9 @@ interface TagInputProps {
   errorMessage?: string;
   onReachEnd?: () => void;
   onSearchChange?: (value: string) => void;
+  suggestedTags?: TagOption[];
+  onManageTags?: () => void;
+  allowCreate?: boolean;
 }
 
 export const TagInput: FC<TagInputProps> = ({
@@ -53,6 +56,9 @@ export const TagInput: FC<TagInputProps> = ({
   errorMessage,
   onReachEnd,
   onSearchChange,
+  suggestedTags = [],
+  onManageTags,
+  allowCreate = true,
 }) => {
   const [open, setOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>('');
@@ -68,17 +74,38 @@ export const TagInput: FC<TagInputProps> = ({
     () => filterAndSortTags(availableTags, inputValue),
     [availableTags, inputValue]
   );
+  const visibleSuggestions = useMemo(() => {
+    if (inputValue.trim()) return [];
+
+    return suggestedTags.filter(
+      (suggestion, index) =>
+        suggestedTags.findIndex((candidate) =>
+          isSameTagName(candidate.name, suggestion.name)
+        ) === index
+    );
+  }, [inputValue, suggestedTags]);
+  const nonSuggestedTags = useMemo(
+    () =>
+      filteredTags.filter(
+        (tag) =>
+          !visibleSuggestions.some((suggestion) =>
+            isSameTagName(suggestion.name, tag.name)
+          )
+      ),
+    [filteredTags, visibleSuggestions]
+  );
   const exactTag = useMemo(
     () => findExactTag(availableTags, inputValue),
     [availableTags, inputValue]
   );
   const creatableTagName = useMemo(() => {
-    if (isLoading || isSearching || errorMessage) return null;
+    if (!allowCreate || isLoading || isSearching || errorMessage) return null;
     return getCreatableTagName(inputValue, availableTags, value);
   }, [
     availableTags,
     errorMessage,
     inputValue,
+    allowCreate,
     isLoading,
     isSearching,
     value,
@@ -236,14 +263,29 @@ export const TagInput: FC<TagInputProps> = ({
                   : 'No tags selected'}
               </p>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-9"
-              onClick={() => handleOpenChange(false)}
-            >
-              Done
-            </Button>
+            <div className="flex items-center gap-2">
+              {onManageTags ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-9 px-2"
+                  onClick={() => {
+                    handleOpenChange(false);
+                    onManageTags();
+                  }}
+                >
+                  Manage
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9"
+                onClick={() => handleOpenChange(false)}
+              >
+                Done
+              </Button>
+            </div>
           </div>
 
           <Command
@@ -290,9 +332,38 @@ export const TagInput: FC<TagInputProps> = ({
                     </CommandGroup>
                   ) : null}
 
-                  {filteredTags.length > 0 ? (
-                    <CommandGroup heading="Matching tags">
-                      {filteredTags.map((tag) => {
+                  {visibleSuggestions.length > 0 ? (
+                    <CommandGroup heading="Suggested for this page">
+                      {visibleSuggestions.map((tag) => {
+                        const isSelected = value.some((selectedTag) =>
+                          isSameTagName(selectedTag.name, tag.name)
+                        );
+
+                        return (
+                          <CommandItem
+                            className="w-full cursor-pointer"
+                            key={`suggestion-${tag.id ?? tag.name}`}
+                            value={`suggestion ${tag.name}`}
+                            onSelect={() => handleSelectTag(tag)}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                isSelected ? 'opacity-100' : 'opacity-0'
+                              )}
+                            />
+                            <span className="truncate">{tag.name}</span>
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  ) : null}
+
+                  {nonSuggestedTags.length > 0 ? (
+                    <CommandGroup
+                      heading={inputValue.trim() ? 'Matching tags' : 'All tags'}
+                    >
+                      {nonSuggestedTags.map((tag) => {
                         const isSelected = value.some((selectedTag) =>
                           isSameTagName(selectedTag.name, tag.name)
                         );
@@ -324,7 +395,7 @@ export const TagInput: FC<TagInputProps> = ({
                     </div>
                   ) : null}
 
-                  {showNoResults ? (
+                  {showNoResults && visibleSuggestions.length === 0 ? (
                     <p className="px-3 py-6 text-center text-sm text-muted-foreground">
                       {normalizedInputValue
                         ? 'No matching tag found.'

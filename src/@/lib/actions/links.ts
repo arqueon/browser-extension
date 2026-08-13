@@ -264,3 +264,55 @@ export async function checkLinkExists(
 ): Promise<boolean> {
   return Boolean(await getLinkByUrl(baseUrl, apiKey));
 }
+
+export interface LibrarySearchOptions {
+  query?: string;
+  tagIds?: number[];
+}
+
+async function searchLinksPage(
+  baseUrl: string,
+  apiKey: string,
+  query: string,
+  tagId?: number
+): Promise<ExistingLink[]> {
+  const params = new URLSearchParams({ sort: '0' });
+  if (query.trim()) params.set('searchQueryString', query.trim());
+  if (tagId !== undefined) params.set('tagId', String(tagId));
+
+  const response = await axios.get<{
+    data?: { links?: ExistingLink[] } | ExistingLink[];
+  }>(`${baseUrl}/api/v1/search?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  const data = response.data.data;
+
+  if (Array.isArray(data)) return data;
+  const links = data?.links;
+  return Array.isArray(links) ? links : [];
+}
+
+export async function searchLibrary(
+  baseUrl: string,
+  apiKey: string,
+  options: LibrarySearchOptions
+) {
+  const tagIds = [...new Set(options.tagIds ?? [])];
+
+  if (tagIds.length === 0) {
+    return await searchLinksPage(baseUrl, apiKey, options.query ?? '');
+  }
+
+  const resultSets = await Promise.all(
+    tagIds.map((tagId) =>
+      searchLinksPage(baseUrl, apiKey, options.query ?? '', tagId)
+    )
+  );
+  const [firstResult = [], ...otherResults] = resultSets;
+  const remainingIds = otherResults
+    .map((links) => new Set(links.map((link) => link.id)));
+
+  return firstResult.filter((link) =>
+    remainingIds.every((ids) => ids.has(link.id))
+  );
+}

@@ -11,6 +11,15 @@ export interface ResponseTags {
   };
 }
 
+export interface TagPolicies {
+  archiveAsScreenshot?: boolean | null;
+  archiveAsMonolith?: boolean | null;
+  archiveAsPDF?: boolean | null;
+  archiveAsReadable?: boolean | null;
+  archiveAsWaybackMachine?: boolean | null;
+  aiTag?: boolean | null;
+}
+
 type ConfigResponse = {
   response: {
     INSTANCE_VERSION?: string | null;
@@ -201,4 +210,91 @@ export async function getTags(
     tags: payload.tags,
     nextCursor: shouldUsePagination ? payload.nextCursor : null,
   };
+}
+
+export async function getAllTags(baseUrl: string, apiKey: string) {
+  const tags: ResponseTags[] = [];
+  let cursor = 0;
+
+  for (let page = 0; page < 100; page += 1) {
+    const result = await getTags(baseUrl, apiKey, cursor);
+    tags.push(...result.tags);
+
+    if (result.nextCursor === null) break;
+    cursor = result.nextCursor;
+  }
+
+  return tags;
+}
+
+const authHeaders = (apiKey: string) => ({
+  Authorization: `Bearer ${apiKey}`,
+  'Content-Type': 'application/json',
+});
+
+export async function createTag(
+  baseUrl: string,
+  apiKey: string,
+  name: string,
+  policies: TagPolicies = {}
+) {
+  const response = await axios.post<{ response: ResponseTags[] }>(
+    `${baseUrl}/api/v1/tags`,
+    {
+      tags: [
+        {
+          label: name,
+          archiveAsScreenshot: policies.archiveAsScreenshot ?? null,
+          archiveAsMonolith: policies.archiveAsMonolith ?? null,
+          archiveAsPDF: policies.archiveAsPDF ?? null,
+          archiveAsReadable: policies.archiveAsReadable ?? null,
+          archiveAsWaybackMachine:
+            policies.archiveAsWaybackMachine ?? null,
+          aiTag: policies.aiTag ?? null,
+        },
+      ],
+    },
+    { headers: authHeaders(apiKey) }
+  );
+
+  return response.data.response[0];
+}
+
+export async function renameTag(
+  baseUrl: string,
+  apiKey: string,
+  id: number,
+  name: string
+) {
+  const response = await axios.put<{ response: ResponseTags }>(
+    `${baseUrl}/api/v1/tags/${id}`,
+    { name },
+    { headers: authHeaders(apiKey) }
+  );
+
+  return response.data.response;
+}
+
+export async function deleteTags(
+  baseUrl: string,
+  apiKey: string,
+  tagIds: number[]
+) {
+  return await axios.delete(`${baseUrl}/api/v1/tags`, {
+    data: { tagIds },
+    headers: authHeaders(apiKey),
+  });
+}
+
+export async function mergeTags(
+  baseUrl: string,
+  apiKey: string,
+  tagIds: number[],
+  newTagName: string
+) {
+  return await axios.put(
+    `${baseUrl}/api/v1/tags/merge`,
+    { tagIds, newTagName },
+    { headers: authHeaders(apiKey) }
+  );
 }

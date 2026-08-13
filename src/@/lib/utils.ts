@@ -2,6 +2,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { checkLinkExists } from './actions/links.ts';
 import { getConfig } from './config.ts';
+import { getInstancePermissionPattern } from './instance-url.ts';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -57,6 +58,19 @@ export function openOptions() {
   getBrowser().runtime.openOptionsPage();
 }
 
+export async function requestInstancePermission(baseUrl: string) {
+  const browser = getBrowser();
+  const permissions = browser.permissions;
+
+  if (!permissions?.request) return true;
+
+  const pattern = getInstancePermissionPattern(
+    baseUrl,
+    browser.runtime.getURL('')
+  );
+  return await permissions.request({ origins: [pattern] });
+}
+
 export function isSafari(): boolean {
   try {
     return /^safari-web-extension:/.test(getBrowser().runtime.getURL(''));
@@ -67,23 +81,26 @@ export function isSafari(): boolean {
 
 export function hasAPI(api: string): boolean {
   const b = getBrowser();
-  let obj: any = b;
+  let obj: unknown = b;
   for (const part of api.split('.')) {
-    if (!obj || typeof obj[part] === 'undefined') return false;
-    obj = obj[part];
+    if (
+      obj === null ||
+      (typeof obj !== 'object' && typeof obj !== 'function')
+    )
+      return false;
+    obj = (obj as Record<string, unknown>)[part];
+    if (typeof obj === 'undefined') return false;
   }
   return true;
 }
 
-export async function updateBadge(tabId: number | undefined) {
+export function setBadgeExists(
+  tabId: number | undefined,
+  linkExists: boolean
+) {
   if (!tabId) return;
 
   const browser = getBrowser();
-  const cachedConfig = await getConfig();
-  const linkExists = await checkLinkExists(
-    cachedConfig.baseUrl,
-    cachedConfig.apiKey
-  );
   if (linkExists) {
     if (browser.action) {
       browser.action.setBadgeText({ tabId, text: '✓' });
@@ -102,4 +119,19 @@ export async function updateBadge(tabId: number | undefined) {
       browser.browserAction.setBadgeText({ tabId, text: '' });
     }
   }
+}
+
+export async function updateBadge(tabId: number | undefined) {
+  if (!tabId) return;
+
+  const cachedConfig = await getConfig();
+  if (!cachedConfig.baseUrl || !cachedConfig.apiKey) {
+    setBadgeExists(tabId, false);
+    return;
+  }
+
+  setBadgeExists(
+    tabId,
+    await checkLinkExists(cachedConfig.baseUrl, cachedConfig.apiKey)
+  );
 }

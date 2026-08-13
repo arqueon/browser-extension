@@ -8,7 +8,7 @@ interface WholeContainerProps extends React.HTMLAttributes<HTMLDivElement>{
 
 const WholeContainer: FC<WholeContainerProps> = ({ children, className, ...props }) => {
   return (
-    <div className={cn('inset-0 w-full flex justify-center max-h-[600px] overflow-y-hidden relative', className)} {...props}>
+    <div className={cn('relative inset-0 flex h-[600px] w-full justify-center overflow-hidden bg-background', className)} {...props}>
       {children}
     </div>
   );
