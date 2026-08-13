@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#17243a"/>
+      <stop offset="0.72" stop-color="#111317"/>
+      <stop offset="1" stop-color="#281817"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.15" cy="0.12" r="0.9">
+      <stop offset="0" stop-color="#37bde8" stop-opacity="0.2"/>
+      <stop offset="0.66" stop-color="#37bde8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="440" height="280" fill="url(#background)"/>
+  <rect width="440" height="280" fill="url(#glow)"/>
+  <circle cx="408" cy="254" r="106" fill="#c35c43" opacity="0.12"/>
+
+  <image href="../public/128.png" x="32" y="34" width="80" height="80"/>
+  <text x="132" y="74" fill="#ffffff" font-family="Adwaita Sans, sans-serif" font-size="37" font-weight="700">Tagwarden</text>
+  <text x="133" y="103" fill="#bec48b" font-family="Adwaita Sans, sans-serif" font-size="17">Tags for Linkwarden</text>
+
+  <line x1="32" y1="138" x2="408" y2="138" stroke="#ffffff" stroke-opacity="0.13"/>
+  <text x="32" y="182" fill="#f7eee6" font-family="Adwaita Sans, sans-serif" font-size="25" font-weight="600">Save links. Organize by tags.</text>
+  <text x="32" y="218" fill="#b7bec7" font-family="Adwaita Sans, sans-serif" font-size="16">A tag-first companion for Linkwarden.</text>
+  <rect x="32" y="238" width="92" height="4" rx="2" fill="#c35c43"/>
+  <rect x="130" y="238" width="48" height="4" rx="2" fill="#37bde8"/>
+  <rect x="184" y="238" width="28" height="4" rx="2" fill="#bec48b"/>
+</svg>

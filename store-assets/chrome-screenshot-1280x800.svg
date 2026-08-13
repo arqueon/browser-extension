@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111823"/>
+      <stop offset="0.56" stop-color="#101114"/>
+      <stop offset="1" stop-color="#1e1514"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.12" cy="0.12" r="0.95">
+      <stop offset="0" stop-color="#37bde8" stop-opacity="0.17"/>
+      <stop offset="0.55" stop-color="#37bde8" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000" flood-opacity="0.48"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="800" fill="url(#background)"/>
+  <rect width="1280" height="800" fill="url(#glow)"/>
+  <circle cx="1168" cy="700" r="250" fill="#c35c43" opacity="0.08"/>
+
+  <image href="../public/128.png" x="72" y="64" width="78" height="78"/>
+  <text x="170" y="103" fill="#f7eee6" font-family="Adwaita Sans, sans-serif" font-size="34" font-weight="700">Tagwarden</text>
+  <text x="171" y="132" fill="#aeb5bf" font-family="Adwaita Sans, sans-serif" font-size="17">Tags for Linkwarden</text>
+
+  <rect x="72" y="194" width="164" height="34" rx="17" fill="#c35c43" opacity="0.18"/>
+  <text x="154" y="217" text-anchor="middle" fill="#f1a38f" font-family="Adwaita Sans, sans-serif" font-size="15" font-weight="600">TAG-FIRST WORKFLOW</text>
+
+  <text x="72" y="293" fill="#ffffff" font-family="Adwaita Sans, sans-serif" font-size="48" font-weight="700">
+    <tspan x="72" dy="0">Save links.</tspan>
+    <tspan x="72" dy="58">Organize by tags.</tspan>
+  </text>
+  <text x="72" y="425" fill="#c4c9cf" font-family="Adwaita Sans, sans-serif" font-size="23">
+    <tspan x="72" dy="0">Choose tags first, add context,</tspan>
+    <tspan x="72" dy="34">and send everything to Linkwarden.</tspan>
+  </text>
+
+  <g font-family="Adwaita Sans, sans-serif" font-size="16" fill="#e8e8e8">
+    <rect x="72" y="518" width="152" height="44" rx="22" fill="#24272c" stroke="#383c43"/>
+    <text x="148" y="546" text-anchor="middle">Save or edit</text>
+    <rect x="236" y="518" width="160" height="44" rx="22" fill="#24272c" stroke="#383c43"/>
+    <text x="316" y="546" text-anchor="middle">Manage tags</text>
+    <rect x="72" y="574" width="134" height="44" rx="22" fill="#24272c" stroke="#383c43"/>
+    <text x="139" y="602" text-anchor="middle">Save tabs</text>
+    <rect x="218" y="574" width="142" height="44" rx="22" fill="#24272c" stroke="#383c43"/>
+    <text x="289" y="602" text-anchor="middle">Find links</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="736" y="66" width="468" height="668" rx="26" fill="#08090a" stroke="#32353a" stroke-width="2"/>
+    <image href="popup-save-edit.png" x="760" y="100" width="420" height="600"/>
+  </g>
+
+  <text x="72" y="710" fill="#7f8995" font-family="Adwaita Sans, sans-serif" font-size="16">A focused, independent companion for self-hosted Linkwarden.</text>
+</svg>
