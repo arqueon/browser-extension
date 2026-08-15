@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.3 — 2026-08-15
+
+- Remove unintended horizontal overflow from the Save/Edit footer in the
+  compact popup.
+- Hide browser-native scrollbar tracks in the Save/Edit view while preserving
+  wheel, touch, and keyboard scrolling.
+
 ## 0.1.2 — 2026-08-13
 
 - Allow recognized private and local-network HTTP instances only after the user

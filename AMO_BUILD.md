@@ -1,4 +1,4 @@
-# AMO reviewer build instructions — Tagwarden 0.1.2
+# AMO reviewer build instructions — Tagwarden 0.1.3
 
 The submitted source archive already contains the complete source tree for this
 version. Extract it into an empty directory and run the commands below from its
@@ -33,7 +33,7 @@ To create a ZIP for comparison with the submitted extension package:
 
 ```bash
 cd dist/firefox
-zip -q -r ../tagwarden-firefox-0.1.2-rebuilt.zip .
+zip -q -r ../tagwarden-firefox-0.1.3-rebuilt.zip .
 ```
 
 ZIP metadata such as entry timestamps may differ. Compare the extracted files

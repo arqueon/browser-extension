@@ -121,3 +121,15 @@
 .tagwarden-select {
   @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
 }
+
+/* Keep compact popup forms scrollable without exposing browser-native tracks.
+ * Horizontal overflow is handled structurally in the form; these rules only
+ * hide the vertical indicator while preserving wheel, touch, and keyboard. */
+.tagwarden-scroll-area {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.tagwarden-scroll-area::-webkit-scrollbar {
+  display: none;
+}

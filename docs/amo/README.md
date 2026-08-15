@@ -56,9 +56,9 @@ This performs an authenticated read of the AMO account profile.
 node scripts/amo-upload.mjs --upload
 ```
 
-The script uploads `dist/tagwarden-firefox-0.1.2.zip` to AMO's `listed`
+The script uploads `dist/tagwarden-firefox-0.1.3.zip` to AMO's `listed`
 validation channel, polls the validator, and stores a sanitized result in
-`dist/amo-upload-0.1.2.json`. It exits with an error if AMO reports the upload
+`dist/amo-upload-0.1.3.json`. It exits with an error if AMO reports the upload
 as already submitted.
 
 The upload UUID is only an input for a later version-create request. Do not run

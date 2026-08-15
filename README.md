@@ -112,9 +112,11 @@ When reviewing the AMO source archive, use the self-contained instructions in
 
 ## Status
 
-Tagwarden `0.1.1` is the current public Firefox release. Version `0.1.2`, which
-improves private-network compatibility, was submitted to AMO on 2026-08-13 and
-is awaiting review; AMO continues to serve `0.1.1` until the update is approved.
+Tagwarden `0.1.2` is the current public Firefox release. Version `0.1.3`
+removes unintended popup scrollbar tracks without disabling scrolling and was
+submitted to the existing Firefox Add-ons listing on 2026-08-15. It remains
+unreviewed while AMO serves `0.1.2`. Chrome remains on its separate review
+track and was not changed by the Firefox submission.
 Chrome-family browsers and Firefox are the v1 targets; the legacy upstream
 Safari project is not part of the release package.
 

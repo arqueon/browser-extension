@@ -253,7 +253,7 @@ const BookmarkForm = ({ onManageTags }: BookmarkFormProps) => {
       : 'Save link';
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto pb-2">
+    <div className="tagwarden-scroll-area min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-2">
       <Form {...form}>
         <form
           className="space-y-4"
@@ -379,7 +379,7 @@ const BookmarkForm = ({ onManageTags }: BookmarkFormProps) => {
             </Label>
           ) : null}
 
-          <div className="sticky bottom-0 -mx-1 flex items-center justify-between border-t bg-background/95 px-1 pt-3 backdrop-blur">
+          <div className="sticky bottom-0 flex w-full items-center justify-between border-t bg-background/95 pt-3 backdrop-blur">
             <span className="min-w-0 truncate pr-3 text-xs text-muted-foreground">
               {existingLink ? 'Already saved — editing' : tabInfo?.url}
             </span>

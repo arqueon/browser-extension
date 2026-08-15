@@ -358,7 +358,7 @@ if (!state.steps.versionCreated) {
         compatibility: ['firefox', 'android'],
         release_notes: {
           'en-US':
-            'Adds support for private and local-network Linkwarden instances. HTTPS remains the default; recognized private HTTP instances require an explicit warning and opt-in. Also improves Firefox host-permission handling and network diagnostics.',
+            'Removes unintended horizontal and vertical scrollbar tracks from the compact Save/Edit popup while preserving wheel, touch, and keyboard scrolling.',
         },
       }
     );

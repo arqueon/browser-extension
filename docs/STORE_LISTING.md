@@ -1,4 +1,4 @@
-# Store listing draft — Tagwarden 0.1.2
+# Store listing draft — Tagwarden 0.1.3
 
 This is publication copy, not evidence that either store submission has been
 made.
