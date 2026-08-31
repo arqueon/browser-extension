@@ -4,6 +4,7 @@ import { writeFile } from 'node:fs/promises';
 
 const port = Number(process.env.CDP_PORT || '9333');
 const output = process.argv[2] || 'store-assets/popup.png';
+const captureView = process.argv[3] || 'current';
 
 let nextId = 0;
 
@@ -85,6 +86,7 @@ if (!popupTarget) throw new Error('Tagwarden popup target was not opened.');
 
 const popupClient = connect(popupTarget.webSocketDebuggerUrl);
 await popupClient.send('Page.enable');
+await popupClient.send('Runtime.enable');
 try {
   await popupClient.send('Emulation.setDeviceMetricsOverride', {
     width: 420,
@@ -96,6 +98,19 @@ try {
   // Chrome extension popups already have their CSS-defined viewport and some
   // Chromium versions reject metrics overrides for this top-level surface.
   if (!error.message.includes('does not support metrics override')) throw error;
+}
+
+if (captureView === 'form') {
+  await popupClient.send('Runtime.evaluate', {
+    expression: `(() => {
+      const done = [...document.querySelectorAll('button')]
+        .find((button) => button.textContent.trim().startsWith('Done'));
+      if (done) done.click();
+      return Boolean(done);
+    })()`,
+    returnByValue: true,
+  });
+  await new Promise((resolve) => setTimeout(resolve, 300));
 }
 await new Promise((resolve) => setTimeout(resolve, 500));
 

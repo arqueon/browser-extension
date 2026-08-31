@@ -154,13 +154,41 @@ if (!isSettingsHttpView) {
   }
 
   await sleep(700);
-  for (const choice of ['Accessibility', 'Product research']) {
-    await client.send('Runtime.evaluate', {
+  const selectedChoices =
+    captureView === 'repaint'
+      ? ['Accessibility']
+      : ['Accessibility', 'Product research'];
+  for (const choice of selectedChoices) {
+    const itemPosition = await client.send('Runtime.evaluate', {
       expression: `(() => {
         const item = [...document.querySelectorAll('[role="option"]')]
           .find((candidate) => candidate.textContent.trim() === ${JSON.stringify(choice)});
-        if (item) item.click();
+        if (!item) return null;
+        const rect = item.getBoundingClientRect();
+        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
       })()`,
+      returnByValue: true,
+    });
+    const point = itemPosition.result.value;
+    if (!point) throw new Error(`Tag option was not found: ${choice}`);
+    await client.send('Input.dispatchMouseEvent', {
+      type: 'mouseMoved',
+      x: point.x,
+      y: point.y,
+    });
+    await client.send('Input.dispatchMouseEvent', {
+      type: 'mousePressed',
+      button: 'left',
+      clickCount: 1,
+      x: point.x,
+      y: point.y,
+    });
+    await client.send('Input.dispatchMouseEvent', {
+      type: 'mouseReleased',
+      button: 'left',
+      clickCount: 1,
+      x: point.x,
+      y: point.y,
     });
     await sleep(220);
   }
@@ -169,7 +197,7 @@ if (!isSettingsHttpView) {
     await client.send('Runtime.evaluate', {
       expression: `(() => {
         const done = [...document.querySelectorAll('button')]
-          .find((button) => button.textContent.trim() === 'Done');
+          .find((button) => button.textContent.trim().startsWith('Done'));
         if (done) done.click();
       })()`,
     });

@@ -50,11 +50,36 @@ function App() {
   }, []);
 
   const navigation = [
-    { view: 'capture' as const, icon: BookmarkPlus, label: 'Save or edit' },
-    { view: 'tags' as const, icon: Tags, label: 'Manage tags' },
-    { view: 'library' as const, icon: Search, label: 'Find links' },
-    { view: 'batch' as const, icon: Layers, label: 'Save open tabs' },
-    { view: 'settings' as const, icon: Settings, label: 'Settings' },
+    {
+      view: 'capture' as const,
+      icon: BookmarkPlus,
+      label: 'Save or edit',
+      shortLabel: 'Save',
+    },
+    {
+      view: 'tags' as const,
+      icon: Tags,
+      label: 'Manage tags',
+      shortLabel: 'Tags',
+    },
+    {
+      view: 'library' as const,
+      icon: Search,
+      label: 'Find links',
+      shortLabel: 'Find',
+    },
+    {
+      view: 'batch' as const,
+      icon: Layers,
+      label: 'Save open tabs',
+      shortLabel: 'Tabs',
+    },
+    {
+      view: 'settings' as const,
+      icon: Settings,
+      label: 'Settings',
+      shortLabel: 'Settings',
+    },
   ];
 
   return (
@@ -76,29 +101,33 @@ function App() {
                 </p>
               </div>
             </div>
-            <nav className="flex items-center gap-0.5" aria-label="Tagwarden views">
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                const disabled = configured === false && item.view !== 'settings';
-                return (
-                  <Button
-                    key={item.view}
-                    type="button"
-                    variant={view === item.view ? 'secondary' : 'ghost'}
-                    size="icon"
-                    className="h-8 w-8"
-                    title={item.label}
-                    aria-label={item.label}
-                    aria-current={view === item.view ? 'page' : undefined}
-                    disabled={disabled}
-                    onClick={() => setView(item.view)}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </Button>
-                );
-              })}
-            </nav>
           </div>
+          <nav
+            className="mt-2 grid grid-cols-5 gap-1"
+            aria-label="Tagwarden views"
+          >
+            {navigation.map((item) => {
+              const Icon = item.icon;
+              const disabled =
+                configured === false && item.view !== 'settings';
+              return (
+                <Button
+                  key={item.view}
+                  type="button"
+                  variant={view === item.view ? 'secondary' : 'ghost'}
+                  className="h-10 min-w-0 flex-col gap-0.5 px-1 py-1 text-[10px] leading-none"
+                  title={item.label}
+                  aria-label={item.label}
+                  aria-current={view === item.view ? 'page' : undefined}
+                  disabled={disabled}
+                  onClick={() => setView(item.view)}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="w-full truncate">{item.shortLabel}</span>
+                </Button>
+              );
+            })}
+          </nav>
         </header>
 
         <main className="mt-3 flex min-h-0 flex-1 flex-col">

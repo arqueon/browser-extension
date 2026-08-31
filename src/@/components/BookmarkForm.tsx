@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
-import { Image, Loader2 } from 'lucide-react';
+import { BookmarkPlus, Image, Loader2, PencilLine } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from '../../hooks/use-toast.ts';
@@ -235,6 +235,8 @@ const BookmarkForm = ({ onManageTags }: BookmarkFormProps) => {
       const description =
         error instanceof AxiosError
           ? error.response?.data?.response || error.message
+          : error instanceof Error
+          ? error.message
           : 'Check the Linkwarden connection and try again.';
       toast({ title: 'Could not save', description, variant: 'destructive' });
     },
@@ -249,7 +251,7 @@ const BookmarkForm = ({ onManageTags }: BookmarkFormProps) => {
       : saveMutation.isLoading
       ? 'Saving…'
       : existingLink
-      ? 'Update link'
+      ? 'Update saved link'
       : 'Save link';
 
   return (
@@ -259,6 +261,33 @@ const BookmarkForm = ({ onManageTags }: BookmarkFormProps) => {
           className="space-y-4"
           onSubmit={form.handleSubmit((values) => saveMutation.mutate(values))}
         >
+          <div
+            className="flex items-center gap-2 rounded-md border bg-secondary/40 px-3 py-2"
+            aria-live="polite"
+          >
+            {checkingLink ? (
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+            ) : existingLink ? (
+              <PencilLine className="h-4 w-4 shrink-0 text-[hsl(var(--tag-accent))]" />
+            ) : (
+              <BookmarkPlus className="h-4 w-4 shrink-0 text-[hsl(var(--tag-accent))]" />
+            )}
+            <p className="min-w-0 truncate text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">
+                {checkingLink
+                  ? 'Checking this page'
+                  : existingLink
+                  ? 'Editing saved link'
+                  : 'New link'}
+              </span>
+              {checkingLink
+                ? ' · Looking for an existing copy…'
+                : existingLink
+                ? ' · Change fields, then update.'
+                : ' · Add tags or a note before saving.'}
+            </p>
+          </div>
+
           <FormField
             control={form.control}
             name="tags"
@@ -379,13 +408,10 @@ const BookmarkForm = ({ onManageTags }: BookmarkFormProps) => {
             </Label>
           ) : null}
 
-          <div className="sticky bottom-0 flex w-full items-center justify-between border-t bg-background/95 pt-3 backdrop-blur">
-            <span className="min-w-0 truncate pr-3 text-xs text-muted-foreground">
-              {existingLink ? 'Already saved — editing' : tabInfo?.url}
-            </span>
+          <div className="sticky bottom-0 w-full border-t bg-background/95 pt-3 backdrop-blur">
             <Button
               type="submit"
-              className="tagwarden-primary shrink-0"
+              className="tagwarden-primary w-full"
               disabled={checkingLink || saveMutation.isLoading}
             >
               {checkingLink ? (

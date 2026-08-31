@@ -21,6 +21,30 @@ const RECENTLY_SAVED_LINK_LIMIT = 50;
 
 const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/+$/, '');
 
+export function buildUpdateLinkPayload(
+  id: number,
+  data: bookmarkFormValues
+) {
+  if (
+    typeof data.collection?.id !== 'number' ||
+    typeof data.collection.ownerId !== 'number'
+  ) {
+    throw new Error(
+      'The link collection could not be loaded. Reopen Tagwarden and try again.'
+    );
+  }
+
+  return {
+    ...data,
+    id,
+    collection: {
+      id: data.collection.id,
+      ownerId: data.collection.ownerId,
+    },
+    tags: data.tags ?? [],
+  };
+}
+
 async function getRecentlySavedLinks(): Promise<RecentlySavedLink[]> {
   const stored = await getBrowser().storage.local.get([
     RECENTLY_SAVED_LINKS_KEY,
@@ -146,9 +170,9 @@ export async function updateLink(
   apiKey: string
 ) {
   const url = `${baseUrl}/api/v1/links/${id}`;
+  const payload = buildUpdateLinkPayload(id, data);
 
-  // The server-side update schema also expects the link id inside the body.
-  return await axios.put(url, { ...data, id }, {
+  return await axios.put(url, payload, {
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
@@ -163,15 +187,41 @@ export async function updateLinkFetch(
   apiKey: string
 ) {
   const url = `${baseUrl}/api/v1/links/${id}`;
+  const payload = buildUpdateLinkPayload(id, data);
 
   return await fetch(url, {
     method: 'PUT',
-    body: JSON.stringify({ ...data, id }),
+    body: JSON.stringify(payload),
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
   });
+}
+
+export async function getLinkById(
+  baseUrl: string,
+  apiKey: string,
+  id: number
+): Promise<ExistingLink> {
+  const response = await fetch(`${baseUrl}/api/v1/links/${id}`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Link details failed with status ${response.status}`);
+  }
+
+  const data = await response.json();
+  const link = data?.response as ExistingLink | null | undefined;
+
+  if (!link || typeof link.id !== 'number') {
+    throw new Error('Linkwarden returned incomplete link details.');
+  }
+
+  return link;
 }
 
 export async function deleteLinkFetch(
@@ -240,9 +290,17 @@ export async function getLinkByUrl(
     const links = Array.isArray(data?.links)
       ? (data.links as ExistingLink[])
       : [];
-    const existingLink = findExactLinkByUrl(links, currentUrl);
+    const existingLinkSummary = findExactLinkByUrl(links, currentUrl);
 
-    if (existingLink) {
+    if (existingLinkSummary) {
+      // Search results can omit the collection relation. Linkwarden's update
+      // endpoint requires its numeric id and ownerId, including for the
+      // built-in Unorganized collection, so hydrate the summary before edit.
+      const existingLink = await getLinkById(
+        baseUrl,
+        apiKey,
+        existingLinkSummary.id
+      );
       try {
         await rememberSavedLink(baseUrl, existingLink);
       } catch (error) {

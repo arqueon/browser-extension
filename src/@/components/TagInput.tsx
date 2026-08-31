@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react';
 import { Button } from './ui/Button.tsx';
-import { Check, ChevronsUpDown, Loader2, Plus, X } from 'lucide-react';
+import { Check, Loader2, Plus, X } from 'lucide-react';
 import {
   Command,
   CommandGroup,
@@ -63,7 +63,6 @@ export const TagInput: FC<TagInputProps> = ({
   const [open, setOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>('');
   const listRef = useRef<HTMLDivElement>(null);
-  const listScrollTopRef = useRef(0);
   const selectingWithEnterRef = useRef(false);
 
   const availableTags = useMemo(
@@ -125,7 +124,6 @@ export const TagInput: FC<TagInputProps> = ({
     if (!hasNextPage || isFetchingNextPage || !onReachEnd) return;
 
     const target = event.currentTarget;
-    listScrollTopRef.current = target.scrollTop;
     const reachedBottom =
       target.scrollTop + target.clientHeight >= target.scrollHeight - 16;
 
@@ -152,17 +150,11 @@ export const TagInput: FC<TagInputProps> = ({
     onChange(toggleTagSelection(value, tag));
 
     if (shouldResetSearch) {
-      listScrollTopRef.current = 0;
       updateSearch('');
+      requestAnimationFrame(() => {
+        if (listRef.current) listRef.current.scrollTop = 0;
+      });
     }
-
-    requestAnimationFrame(() => {
-      if (listRef.current) {
-        listRef.current.scrollTop = shouldResetSearch
-          ? 0
-          : listScrollTopRef.current;
-      }
-    });
   };
 
   const handleRemoveTag = (tagName: string) => {
@@ -236,10 +228,16 @@ export const TagInput: FC<TagInputProps> = ({
         className="w-full justify-between bg-neutral-100 dark:bg-neutral-900"
         onClick={() => handleOpenChange(true)}
       >
-        <span className="truncate">
-          {selectedTagsLabel || 'Select tags...'}
+        <span className="min-w-0 flex-1 truncate text-left">
+          {selectedTagsLabel || 'Add tags'}
         </span>
-        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        {value.length > 0 ? (
+          <span className="ml-2 inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--tag-accent))] px-1.5 text-xs font-semibold text-white">
+            {value.length}
+          </span>
+        ) : (
+          <Plus className="ml-2 h-4 w-4 shrink-0 opacity-60" />
+        )}
       </Button>
 
       {open ? (
@@ -252,15 +250,15 @@ export const TagInput: FC<TagInputProps> = ({
         >
           <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
             <div className="min-w-0 flex-1 pr-3">
-              <h2 className="text-base font-semibold">Tags</h2>
+              <h2 className="text-base font-semibold">Select tags</h2>
               <p
                 className="truncate text-xs text-muted-foreground"
                 aria-live="polite"
                 title={selectedTagsLabel || undefined}
               >
                 {value.length > 0
-                  ? `${value.length} selected: ${selectedTagsLabel}`
-                  : 'No tags selected'}
+                  ? `${value.length} selected · ${selectedTagsLabel}`
+                  : 'Choose one or more tags for this link'}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -283,7 +281,7 @@ export const TagInput: FC<TagInputProps> = ({
                 className="h-9"
                 onClick={() => handleOpenChange(false)}
               >
-                Done
+                {value.length > 0 ? `Done (${value.length})` : 'Done'}
               </Button>
             </div>
           </div>
@@ -341,7 +339,11 @@ export const TagInput: FC<TagInputProps> = ({
 
                         return (
                           <CommandItem
-                            className="w-full cursor-pointer"
+                            className={cn(
+                              'w-full cursor-pointer',
+                              isSelected &&
+                                'bg-secondary font-medium text-secondary-foreground'
+                            )}
                             key={`suggestion-${tag.id ?? tag.name}`}
                             value={`suggestion ${tag.name}`}
                             onSelect={() => handleSelectTag(tag)}
@@ -349,7 +351,9 @@ export const TagInput: FC<TagInputProps> = ({
                             <Check
                               className={cn(
                                 'mr-2 h-4 w-4',
-                                isSelected ? 'opacity-100' : 'opacity-0'
+                                isSelected
+                                  ? 'text-[hsl(var(--tag-accent))] opacity-100'
+                                  : 'opacity-0'
                               )}
                             />
                             <span className="truncate">{tag.name}</span>
@@ -370,7 +374,11 @@ export const TagInput: FC<TagInputProps> = ({
 
                         return (
                           <CommandItem
-                            className="w-full cursor-pointer"
+                            className={cn(
+                              'w-full cursor-pointer',
+                              isSelected &&
+                                'bg-secondary font-medium text-secondary-foreground'
+                            )}
                             key={tag.id ?? tag.name}
                             value={tag.name}
                             onSelect={() => handleSelectTag(tag)}
@@ -378,7 +386,9 @@ export const TagInput: FC<TagInputProps> = ({
                             <Check
                               className={cn(
                                 'mr-2 h-4 w-4',
-                                isSelected ? 'opacity-100' : 'opacity-0'
+                                isSelected
+                                  ? 'text-[hsl(var(--tag-accent))] opacity-100'
+                                  : 'opacity-0'
                               )}
                             />
                             <span className="truncate">{tag.name}</span>
