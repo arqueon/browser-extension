@@ -71,6 +71,31 @@ export async function requestInstancePermission(baseUrl: string) {
   return await permissions.request({ origins: [pattern] });
 }
 
+export async function hasTabsPermission(): Promise<boolean> {
+  const browser = getBrowser();
+  const permissions = browser.permissions;
+
+  // Browsers without the permissions API (e.g. Safari's legacy bridge)
+  // keep `tabs` as a required permission in their manifest, so treat the
+  // batch-save view as authorized.
+  if (!permissions?.contains) return true;
+
+  try {
+    return await permissions.contains({ permissions: ['tabs'] });
+  } catch {
+    return false;
+  }
+}
+
+export async function requestTabsPermission(): Promise<boolean> {
+  const browser = getBrowser();
+  const permissions = browser.permissions;
+
+  if (!permissions?.request) return true;
+
+  return await permissions.request({ permissions: ['tabs'] });
+}
+
 export function isSafari(): boolean {
   try {
     return /^safari-web-extension:/.test(getBrowser().runtime.getURL(''));

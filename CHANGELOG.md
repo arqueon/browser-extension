@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.4 — 2026-11-22
+
+- Chrome Web Store compliance: move `tabs` from required to
+  `optional_permissions` in the Chrome manifest after the "unused permission"
+  rejection (reference Purple Potassium). Batch saving now asks for the
+  permission at runtime, from its own view, and the rest of the extension
+  works without it. Firefox is unchanged: `tabs` remains required there and
+  no AMO submission ships this version yet.
+
 ## 0.1.3 — 2026-08-15
 
 - Remove unintended horizontal overflow from the Save/Edit footer in the

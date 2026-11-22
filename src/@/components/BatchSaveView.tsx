@@ -7,7 +7,7 @@ import { getAllTags } from '../lib/actions/tags.ts';
 import { getConfig } from '../lib/config.ts';
 import { TagOption } from '../lib/tag-utils.ts';
 import { recordTagUsage } from '../lib/tag-preferences.ts';
-import { getBrowser } from '../lib/utils.ts';
+import { getBrowser, hasTabsPermission, requestTabsPermission } from '../lib/utils.ts';
 import { bookmarkFormValues } from '../lib/validators/bookmarkForm.ts';
 import { Button } from './ui/Button.tsx';
 import { Checkbox } from './ui/CheckBox.tsx';
@@ -26,6 +26,13 @@ export function BatchSaveView() {
   const [collectionId, setCollectionId] = useState<number>();
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<string>();
+  // Chrome requires `tabs` as an optional permission: it is only granted at
+  // runtime, when the user enables it from this view. Other builds (Firefox,
+  // Safari) ship it as a required permission and skip the prompt entirely.
+  const [tabsPermission, setTabsPermission] = useState<
+    'checking' | 'granted' | 'missing'
+  >('checking');
+  const [permissionNotice, setPermissionNotice] = useState<string>();
 
   const configQuery = useQuery({ queryKey: ['config'], queryFn: getConfig });
   const tagsQuery = useQuery({
@@ -43,6 +50,13 @@ export function BatchSaveView() {
   });
 
   useEffect(() => {
+    void hasTabsPermission().then((granted) =>
+      setTabsPermission(granted ? 'granted' : 'missing')
+    );
+  }, []);
+
+  useEffect(() => {
+    if (tabsPermission !== 'granted') return;
     void Promise.resolve(getBrowser().tabs.query({ currentWindow: true })).then(
       (browserTabs) => {
         const normalizedTabs = browserTabs as BatchTab[];
@@ -55,7 +69,19 @@ export function BatchSaveView() {
         );
       }
     );
-  }, []);
+  }, [tabsPermission]);
+
+  const enableTabsAccess = async () => {
+    setPermissionNotice(undefined);
+    const granted = await requestTabsPermission();
+    if (granted) {
+      setTabsPermission('granted');
+    } else {
+      setPermissionNotice(
+        'Access was denied. Batch saving needs the tabs permission to read open tabs.'
+      );
+    }
+  };
 
   useEffect(() => {
     if (configQuery.data?.defaultCollectionId)
@@ -120,6 +146,43 @@ export function BatchSaveView() {
     setSummary(`${saved} saved · ${skipped} already present · ${failed} failed`);
     setBusy(false);
   };
+
+  if (tabsPermission === 'checking') {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border bg-card p-3 text-xs text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Checking tab access…
+      </div>
+    );
+  }
+
+  if (tabsPermission === 'missing') {
+    return (
+      <div className="space-y-3 rounded-lg border bg-card p-3">
+        <div>
+          <h2 className="text-sm font-semibold">Save open tabs</h2>
+          <p className="text-xs text-muted-foreground">
+            Batch saving reads the address and title of every open tab, which
+            needs the optional tabs permission. Everything else in Tagwarden
+            works without it.
+          </p>
+        </div>
+        {permissionNotice ? (
+          <p className="text-xs text-red-600" role="alert">
+            {permissionNotice}
+          </p>
+        ) : null}
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-8 text-xs"
+          onClick={() => void enableTabsAccess()}
+        >
+          Allow tab access
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-3">
