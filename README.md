@@ -45,6 +45,13 @@ blocked. See [PRIVACY.md](PRIVACY.md) for the complete disclosure.
 
 ## Install a local build
 
+### Firefox
+
+Get the signed release from Mozilla Add-ons:
+[Tagwarden — Tags for Linkwarden](https://addons.mozilla.org/firefox/addon/tagwarden-tags-for-linkwarden/).
+
+The sections below are for trying a local build instead.
+
 ### Chrome, Chromium, Brave, Edge, or Vivaldi
 
 1. Download or build the Chrome package.
@@ -112,11 +119,8 @@ When reviewing the AMO source archive, use the self-contained instructions in
 
 ## Status
 
-Tagwarden `0.1.2` is the current public Firefox release. Version `0.1.3`
-removes unintended popup scrollbar tracks without disabling scrolling and was
-submitted to the existing Firefox Add-ons listing on 2026-08-15. It remains
-unreviewed while AMO serves `0.1.2`. Chrome remains on its separate review
-track and was not changed by the Firefox submission.
+Tagwarden `0.1.3` is the current public Firefox release on
+[Mozilla Add-ons](https://addons.mozilla.org/firefox/addon/tagwarden-tags-for-linkwarden/).
 Chrome-family browsers and Firefox are the v1 targets; the legacy upstream
 Safari project is not part of the release package.
 
